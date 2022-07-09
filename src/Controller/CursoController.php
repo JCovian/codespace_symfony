@@ -2,81 +2,89 @@
 
 namespace App\Controller;
 
+use App\Entity\Curso;
+use App\Form\CursoType;
+use App\Repository\CursoRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Doctrine\ORM\EntityManagerInterface;
-use App\Entity\Curso;
-use App\Repository\CursoRepository;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
+/**
+ * @Route("/curso")
+ */
 class CursoController extends AbstractController
 {
     /**
-     * @Route("/curso", name="curso")
+     * @Route("/", name="app_curso_index", methods={"GET"})
      */
-    public function index(CursoRepository $repository): Response
+    public function index(CursoRepository $cursoRepository): Response
     {
-        $cursos = $repository->findAll();
-
         return $this->render('curso/index.html.twig', [
-            'controller_name' => 'CursoController',
-            'cursos' => $cursos,
+            'cursos' => $cursoRepository->findAll(),
         ]);
     }
 
     /**
-     * @Route("/curso/add", name="curso_add")
+     * @Route("/new", name="app_curso_new", methods={"GET", "POST"})
      */
-    public function add(EntityManagerInterface $em): Response
+    public function new(Request $request, CursoRepository $cursoRepository): Response
     {
         $curso = new Curso();
-        $curso->setNombre('Curso de inglés');
-        $curso->setIdioma('Inglés');
-        $curso->setNivel(1);
+        $form = $this->createForm(CursoType::class, $curso);
+        $form->handleRequest($request);
 
-        $curso2 = new Curso();
-        $curso2->setNombre('Curso de Chino');
-        $curso2->setIdioma('Chino');
-        $curso2->setNivel(1);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $cursoRepository->add($curso, true);
 
-        $alumno = new \App\Entity\Alumno();
-        $alumno->setName('Hugo');
-        $alumno->setEmail('hugo@correo.es');
+            return $this->redirectToRoute('app_curso_index', [], Response::HTTP_SEE_OTHER);
+        }
 
-        $curso->addAlumno($alumno);
-
-        $em->persist($curso);
-        $em->persist($curso2);
-        $em->persist($alumno);
-
-        $em->flush();
-
-
-        return new RedirectResponse('../curso');
+        return $this->renderForm('curso/new.html.twig', [
+            'curso' => $curso,
+            'form' => $form,
+        ]);
     }
 
     /**
-     * @Route("/curso/{id}", name="curso_show")
+     * @Route("/{id}", name="app_curso_show", methods={"GET"})
      */
-    public function show($id, CursoRepository $repository): Response
+    public function show(Curso $curso): Response
     {
-        $curso = $repository->find($id);
-
         return $this->render('curso/show.html.twig', [
-            'item' => $curso,
+            'curso' => $curso,
         ]);
     }
 
     /**
-     * @Route("/curso/filter/{idioma}", name="curso_filter")
+     * @Route("/{id}/edit", name="app_curso_edit", methods={"GET", "POST"})
      */
-    public function filter($idioma, CursoRepository $repository): Response
+    public function edit(Request $request, Curso $curso, CursoRepository $cursoRepository): Response
     {
-        $curso = $repository->findByIdioma($idioma);
+        $form = $this->createForm(CursoType::class, $curso);
+        $form->handleRequest($request);
 
-        return $this->render('curso/index.html.twig', [
-            'cursos' => $curso,
+        if ($form->isSubmitted() && $form->isValid()) {
+            $cursoRepository->add($curso, true);
+
+            return $this->redirectToRoute('app_curso_index', [], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->renderForm('curso/edit.html.twig', [
+            'curso' => $curso,
+            'form' => $form,
         ]);
+    }
+
+    /**
+     * @Route("/{id}", name="app_curso_delete", methods={"POST"})
+     */
+    public function delete(Request $request, Curso $curso, CursoRepository $cursoRepository): Response
+    {
+        if ($this->isCsrfTokenValid('delete'.$curso->getId(), $request->request->get('_token'))) {
+            $cursoRepository->remove($curso, true);
+        }
+
+        return $this->redirectToRoute('app_curso_index', [], Response::HTTP_SEE_OTHER);
     }
 }
