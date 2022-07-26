@@ -94,9 +94,9 @@ class ApiCursoController extends AbstractController
 
     }
 
- //   /**
- //    * @Route("/{id}", name="api_curso_edit", methods={"PUT"})
- //    */
+    /**
+     * @Route("/{id}", name="api_curso_edit", methods={"PUT"})
+    */
     public function edit($id, Request $request, CursoRepository $cursoRepository, EntityManagerInterface $em): Response
     {
 
